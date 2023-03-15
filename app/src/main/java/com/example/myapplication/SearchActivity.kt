@@ -145,7 +145,7 @@ class SearchActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
         val results: ArrayList<String> = ArrayList()
         if (productPinyinList.isNotEmpty()) {
             productPinyinList.forEachIndexed { index, char ->
-                if ("iuv".contains(keyboard)) {
+                if ("iuv".contains(keyboard, true)) {
                     return results
                 }
                 val matcher = Pattern.compile(keyboard, Pattern.CASE_INSENSITIVE).matcher(char)
