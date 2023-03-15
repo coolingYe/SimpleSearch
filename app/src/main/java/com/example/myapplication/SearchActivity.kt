@@ -9,37 +9,34 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.PopupWindow
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
-import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.example.myapplication.databinding.ActivitySearchBinding
 import com.github.houbb.pinyin.constant.enums.PinyinStyleEnum
 import com.github.houbb.pinyin.util.PinyinHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.w3c.dom.Text
+import java.util.regex.Pattern
 
 class SearchActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
 
-    lateinit var mView: ActivitySearchBinding
-    lateinit var popupWindow: PopupWindow
-    lateinit var popupWindowView: View
+    private lateinit var mView: ActivitySearchBinding
+    private lateinit var popupWindow: PopupWindow
+    private lateinit var popupWindowView: View
     var searchInfo = ""
     lateinit var tvSearch: TextView
 
-    private val product = listOf("苹果", "西瓜", "橘子", "香蕉", "梨子", "荔枝", "龙眼")
+    private val productList =
+        listOf("苹果", "西瓜", "橘子", "香蕉", "梨子", "荔枝", "龙眼", "猕猴桃", "圣女果", "哈密瓜", "西红柿", "芒果", "葡萄")
 
-    val productFirstWords by lazy {
-        val list = ArrayList<String>()
-        product.forEach { char ->
-            list.add(PinyinHelper.toPinyin(char, PinyinStyleEnum.FIRST_LETTER).replace(" ",""))
+    private val productPinyinList by lazy {
+        val array = ArrayList<String>()
+        productList.forEach { char ->
+            array.add(PinyinHelper.toPinyin(char, PinyinStyleEnum.FIRST_LETTER).replace(" ", ""))
         }
-        list
+        array
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,7 +56,6 @@ class SearchActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
             contentView = LayoutInflater.from(this@SearchActivity)
                 .inflate(R.layout.layout_popupwindows_search_view, null)
             setBackgroundDrawable(BitmapDrawable())
-            isFocusable = true
             animationStyle = R.style.left_anim
         }
         popupWindowView = popupWindow.contentView
@@ -79,13 +75,11 @@ class SearchActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
         }
     }
 
-    fun getKeyboardInfo(): List<String> {
-        val list = ArrayList<String>()
-        val str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        str.forEach {
-            list.add(it.toString())
+    private fun getKeyboardInfo(): List<String> {
+        return run {
+            val str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+            str.map { it.toString() }
         }
-        return list
     }
 
     override fun onResume() {
@@ -129,14 +123,39 @@ class SearchActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
     }
 
     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        if (count > 0) {
-
-            Toast.makeText(this, s.toString(), Toast.LENGTH_SHORT).show()
-            return
+        lifecycleScope.launch {
+            if (count > 0) {
+                searchResult(s.toString()).let {
+                    if (it.isNotEmpty()) {
+                        mView.flowlayoutSearchResult.removeAllViews()
+                        mView.flowlayoutSearchResult.setTags(it)
+                        return@launch
+                    }
+                }
+            }
+            mView.flowlayoutSearchResult.removeAllViews()
         }
     }
 
     override fun afterTextChanged(s: Editable?) {
 
+    }
+
+    private fun searchResult(keyboard: String): List<String> {
+        val results: ArrayList<String> = ArrayList()
+        if (productPinyinList.isNotEmpty()) {
+            productPinyinList.forEachIndexed { index, char ->
+                if ("iuv".contains(keyboard)) {
+                    return results
+                }
+                val matcher = Pattern.compile(keyboard, Pattern.CASE_INSENSITIVE).matcher(char)
+                if (matcher.find()) {
+                    if (matcher.start() == 0) {
+                        results.add(productList[index])
+                    }
+                }
+            }
+        }
+        return results
     }
 }
