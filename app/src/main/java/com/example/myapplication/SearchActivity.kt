@@ -1,64 +1,55 @@
 package com.example.myapplication
 
-import android.annotation.SuppressLint
-import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import android.widget.PopupWindow
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.myapplication.databinding.ActivitySearchBinding
 import com.github.houbb.pinyin.constant.enums.PinyinStyleEnum
 import com.github.houbb.pinyin.util.PinyinHelper
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.regex.Pattern
 
 class SearchActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
 
     private lateinit var mView: ActivitySearchBinding
-    private lateinit var popupWindow: PopupWindow
-    private lateinit var popupWindowView: View
     var searchInfo = ""
     lateinit var tvSearch: TextView
 
-    private val productList =
-        listOf("苹果", "西瓜", "橘子", "香蕉", "梨子", "荔枝", "龙眼", "猕猴桃", "圣女果", "哈密瓜", "西红柿", "芒果", "葡萄")
+    private val productList = listOf("苹果","水蜜桃","黄桃","油桃","杨桃","樱桃","车厘子","猕猴桃","奇异果",
+        "菠萝","凤梨","西瓜","山楂","橙子","榴莲","菠萝蜜","柚子","蓝莓","红梅","草莓","黑莓","柠檬","红枣","香蕉",
+        "甜瓜","沙果","海棠","野樱梅","枇杷","欧楂","香梨","雪梨","温柏","蔷薇果","花楸","火龙果","蟠桃","李子","梅子",
+        "青梅","西梅","白玉樱桃","䨱盆子","云梅","罗甘梅","白里叶梅","砂糖桔","青柠","金桔","葡萄柚","香木缘","佛手","指橙",
+        "黄皮果","哈密瓜","香瓜","白兰瓜","刺角瓜","金铃子","大蕉","南洋红香蕉","提子","醋栗","黑醋栗","红醋栗","脐橙","木瓜",
+        "龙眼","桂圆","荔枝","芒果","黄金瓜","杨梅","莲雾","雪莲果","黑布林","圣女果","石榴","桑葚","人参果","冬枣","椰子","仙人掌果")
 
-    private val productPinyinList by lazy {
-        val array = ArrayList<String>()
-        productList.forEach { char ->
-            array.add(PinyinHelper.toPinyin(char, PinyinStyleEnum.FIRST_LETTER).replace(" ", ""))
-        }
-        array
-    }
+    private lateinit var productPinyinList: List<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mView = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(mView.root)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val array = ArrayList<String>()
+            productList.forEach { char ->
+                array.add(
+                    PinyinHelper.toPinyin(char, PinyinStyleEnum.FIRST_LETTER).replace(" ", "")
+                )
+            }
+            productPinyinList = array
+        }
         initPopUpWindowSearch()
-
     }
 
-    @SuppressLint("InflateParams")
-    fun initPopUpWindowSearch() {
-        popupWindow = PopupWindow()
-        with(popupWindow) {
-            width = ViewGroup.LayoutParams.WRAP_CONTENT
-            height = ViewGroup.LayoutParams.MATCH_PARENT
-            contentView = LayoutInflater.from(this@SearchActivity)
-                .inflate(R.layout.layout_popupwindows_search_view, null)
-            setBackgroundDrawable(BitmapDrawable())
-            animationStyle = R.style.left_anim
-        }
-        popupWindowView = popupWindow.contentView
+
+    private fun initPopUpWindowSearch() {
+        val popupWindowView = mView.layoutSearch.layoutSearchView
         val keyboard = popupWindowView.findViewById<CustomerFlowLayout>(R.id.flowlayout_search)
         tvSearch = popupWindowView.findViewById(R.id.tv_search) as TextView
         tvSearch.addTextChangedListener(this)
@@ -84,20 +75,9 @@ class SearchActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
 
     override fun onResume() {
         super.onResume()
-        showPopUpWindowSetting()
-    }
-
-    private fun showPopUpWindowSetting() {
-        lifecycleScope.launch {
-            delay(500L)
-            popupWindow.showAtLocation(mView.clSearch, Gravity.START, 0, 0)
-        }
-    }
-
-    private fun hidePopUpWindowSetting() {
-        if (popupWindow.isShowing) {
-            popupWindow.dismiss()
-        }
+        val animation: Animation =
+            AnimationUtils.loadAnimation(this@SearchActivity, R.anim.enter_left_long)
+        mView.layoutSearch.layoutSearchView.startAnimation(animation)
     }
 
     override fun onClick(v: View?) {
